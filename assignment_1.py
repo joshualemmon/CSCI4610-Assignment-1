@@ -11,12 +11,15 @@ import struct
 import xml.etree.ElementTree as ET
 from queue import *
 import math
+import numpy as np
 
 # bounds of the window, in lat/long
-LEFTLON = 18.055
-RIGHTLON = 18.125
-TOPLAT = 42.675
-BOTLAT = 42.635
+lat = 43.8948
+lon = -78.8612
+LEFTLON = -78
+RIGHTLON = -79
+TOPLAT = 44
+BOTLAT = 43
 WIDTH = RIGHTLON-LEFTLON
 HEIGHT = TOPLAT-BOTLAT
 # ratio of one degree of longitude to one degree of latitude 
@@ -34,14 +37,15 @@ MPERLON = MPERLAT*LONRATIO
 def node_dist(n1, n2):
     ''' Distance between nodes n1 and n2, in meters. '''
     # maybe add height to heuristic as a hypotenuse?
-    # eg get heights, calculate slope with math.sqrt(dx*dx+dy*dy) as run and diff in heights as rise
+    # distance travelled wont be horizontal but whatever length of hypotenuse is
+    # 
 
     dx = (n2.pos[0]-n1.pos[0])*MPERLON
     dy = (n2.pos[1]-n1.pos[1])*MPERLAT
     flat_dist = math.sqrt(dx*dx+dy*dy)
-    #height_diff = n2.elev - h1.elev
-    #slope = height_diff/flat_dist
-    return flat_dist # in meters
+    #height_diff = n2.elev - n1.elev
+    #slope = math.sqrt(flat_dist*flat_dist + height_diff*height_diff)
+    return flat_dist #return slope instead? in meters
  
 class Node():
     ''' Graph (map) node, not a search node! '''
@@ -282,12 +286,18 @@ class PlanWin(Frame):
 
 def build_elevs(efilename):
     ''' read in elevations from a file. '''
-    efile = open(efilename)
-    estr = efile.read()
-    elevs = []
-    for spot in range(0,len(estr),2):
-        elevs.append(struct.unpack('>h',estr[spot:spot+2])[0])
-    return elevs
+    #efile = open(efilename)
+    #estr = efile.read()
+    #elevs = []
+    #for spot in range(0,len(estr),2):
+    #    elevs.append(struct.unpack('>h',estr[spot:spot+2])[0])
+    with open(efilename, 'rb') as height_data:
+        elevs = np.fromfile(height_data, np.dtype('>i2'), EPIX*EPIX).reshape((EPIX, EPIX))
+
+        lat_row = int(round((lat - int(lat)) * (EPIX - 1), 0))
+        lon_row = int(round((lon - int(lon)) * (EPIX - 1), 0))
+        print(lat_row, lon_row)
+        return elevs[EPIX - 1 - lat_row, lon_row].astype(int)
 
 def build_graph(elevs):
     ''' Build the search graph from the OpenStreetMap XML. '''
@@ -353,6 +363,7 @@ def build_graph(elevs):
     return nodes, ways, coastnodes
 
 elevs = build_elevs("N43W079.hgt")
+print(elevs)
 nodes, ways, coastnodes = build_graph(elevs)
 
 master = Tk()
