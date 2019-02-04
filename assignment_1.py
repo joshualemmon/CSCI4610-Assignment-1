@@ -33,9 +33,15 @@ MPERLON = MPERLAT*LONRATIO
 
 def node_dist(n1, n2):
     ''' Distance between nodes n1 and n2, in meters. '''
+    # maybe add height to heuristic as a hypotenuse?
+    # eg get heights, calculate slope with math.sqrt(dx*dx+dy*dy) as run and diff in heights as rise
+
     dx = (n2.pos[0]-n1.pos[0])*MPERLON
     dy = (n2.pos[1]-n1.pos[1])*MPERLAT
-    return math.sqrt(dx*dx+dy*dy) # in meters
+    flat_dist = math.sqrt(dx*dx+dy*dy)
+    #height_diff = n2.elev - h1.elev
+    #slope = height_diff/flat_dist
+    return flat_dist # in meters
  
 class Node():
     ''' Graph (map) node, not a search node! '''
@@ -346,7 +352,7 @@ def build_graph(elevs):
     print(nodes[coastnodes[0]])
     return nodes, ways, coastnodes
 
-elevs = build_elevs("oshawa.HGT")
+elevs = build_elevs("N43W079.hgt")
 nodes, ways, coastnodes = build_graph(elevs)
 
 master = Tk()
