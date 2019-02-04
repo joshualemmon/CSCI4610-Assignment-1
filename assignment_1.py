@@ -49,7 +49,7 @@ def node_dist(n1, n2):
  
 class Node():
     ''' Graph (map) node, not a search node! '''
-    __slots__ = ('id', 'pos', 'ways', 'elev')
+    __slots__ = ('id', 'pos', 'ways', 'elev', 'waystr')
     def __init__(self,id,p,e=0):
         self.id = id
         self.pos = p
@@ -73,7 +73,7 @@ class Node():
 
 class Edge():
     ''' Graph (map) edge. Includes cost computation.'''
-    __slots__ = ('way','dest')
+    __slots__ = ('way','dest', 'cost')
     def __init__(self, w, src, d):
         self.way = w
         self.dest = d
@@ -247,12 +247,13 @@ class PlanWin(Frame):
                 self.whatis[((int)(nextpix[0]),(int)(nextpix[1]))] = nlist[n+1]
                 w.create_line(thispix[0],thispix[1],nextpix[0],nextpix[1])
                 thispix = nextpix
-        thispix = self.lat_lon_to_pix(self.nodes[coastnodes[0]].pos)
-        # also draw the coast:
-        for n in range(len(coastnodes)-1):
-            nextpix = self.lat_lon_to_pix(self.nodes[coastnodes[n+1]].pos)
-            w.create_line(thispix[0],thispix[1],nextpix[0],nextpix[1],fill="blue")
-            thispix = nextpix
+        if coastnodes:
+            thispix = self.lat_lon_to_pix(self.nodes[coastnodes[0]].pos)
+            # also draw the coast:
+            for n in range(len(coastnodes)-1):
+                nextpix = self.lat_lon_to_pix(self.nodes[coastnodes[n+1]].pos)
+                w.create_line(thispix[0],thispix[1],nextpix[0],nextpix[1],fill="blue")
+                thispix = nextpix
 
         # other visible things are hiding for now...
         w.create_line(0,0,0,0,fill='orange',width=3,tag='path')
@@ -301,7 +302,7 @@ def build_elevs(efilename):
 
 def build_graph(elevs):
     ''' Build the search graph from the OpenStreetMap XML. '''
-    tree = ET.parse('oshawa.osm')
+    tree = ET.parse('map.osm')
     root = tree.getroot()
 
     nodes = dict()
@@ -319,12 +320,12 @@ def build_graph(elevs):
                 el = elevs[erow*EPIX+ecol]
             except IndexError:
                 el = 0
-            nodes[(long)(item.get('id'))] = Node((long)(item.get('id')),coords,el)            
+            nodes[int((item.get('id')))] = Node(int((item.get('id'))),coords,el)            
         elif item.tag == 'way':
             if item.get('id') == '157161112': #main coastline way ID
                 for thing in item:
                     if thing.tag == 'nd':
-                        coastnodes.append((long)(thing.get('ref')))
+                        coastnodes.append(int((thing.get('ref'))))
                 continue
             useme = False
             oneway = False
@@ -339,12 +340,12 @@ def build_graph(elevs):
                     if thing.get('v') == 'yes':
                         oneway = True
             if useme:
-                wayid = (long)(item.get('id'))
+                wayid = (int)(item.get('id'))
                 ways[wayid] = Way(myname,mytype)
                 nlist = []
                 for thing in item:
                     if thing.tag == 'nd':
-                        nlist.append((long)(thing.get('ref')))
+                        nlist.append((int)(thing.get('ref')))
                 thisn = nlist[0]
                 for n in range(len(nlist)-1):
                     nextn = nlist[n+1]
@@ -358,8 +359,8 @@ def build_graph(elevs):
                         thisn = nextn                
                 ways[wayid].nodes = nlist
     print(len(coastnodes))
-    print(coastnodes[0])
-    print(nodes[coastnodes[0]])
+    #print(coastnodes[0])
+    #print(nodes[coastnodes[0]])
     return nodes, ways, coastnodes
 
 elevs = build_elevs("N43W079.hgt")
