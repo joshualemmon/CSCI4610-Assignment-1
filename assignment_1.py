@@ -29,23 +29,26 @@ WINHGT = (int)((WINWID/LONRATIO)*HEIGHT/WIDTH)
 TOXPIX = WINWID/WIDTH
 TOYPIX = WINHGT/HEIGHT
 #width,height of elevation array
-EPIX = 3601
+EPIX = 1201
 # approximate number of meters per degree of latitude
 MPERLAT = 111000
 MPERLON = MPERLAT*LONRATIO
 
 def node_dist(n1, n2):
     ''' Distance between nodes n1 and n2, in meters. '''
-    # maybe add height to heuristic as a hypotenuse?
-    # distance travelled wont be horizontal but whatever length of hypotenuse is
-    # 
+    # Added height difference between nodes to the heuristic scaled by
+    # sin(theta) where theta is the angle of incline.
+    # This way nodes that are relative even height wise will be more 
+    # desirable. Since the slope distance between nodes will always be
+    # more than the horizontal distance, this should minimize slope
+    # distance traversed.
 
     dx = (n2.pos[0]-n1.pos[0])*MPERLON
     dy = (n2.pos[1]-n1.pos[1])*MPERLAT
     flat_dist = math.sqrt(dx*dx+dy*dy)
-    #height_diff = n2.elev - n1.elev
-    #slope = math.sqrt(flat_dist*flat_dist + height_diff*height_diff)
-    return flat_dist #return slope instead? in meters
+    height_diff = n2.elev - n1.elev
+    theta = math.atan(height_diff/flat_dist)
+    return flat_dist + height_diff*math.sin(theta) #return slope instead? in meters
  
 class Node():
     ''' Graph (map) node, not a search node! '''
@@ -163,6 +166,7 @@ class PlanWin(Frame):
         row = (int)((43 - latlon[0]) * EPIX)
         # col is 0 for 18 E, 1201 for 19 E
         col = (int)((latlon[1]-18) * EPIX)
+        
         return self.elevs[row*EPIX+col]
 
     def maphover(self,event):
@@ -247,7 +251,7 @@ class PlanWin(Frame):
                 self.whatis[((int)(nextpix[0]),(int)(nextpix[1]))] = nlist[n+1]
                 w.create_line(thispix[0],thispix[1],nextpix[0],nextpix[1])
                 thispix = nextpix
-        if coastnodes:
+        if len(coastnodes) > 0:
             thispix = self.lat_lon_to_pix(self.nodes[coastnodes[0]].pos)
             # also draw the coast:
             for n in range(len(coastnodes)-1):
@@ -312,6 +316,7 @@ def build_graph(elevs):
     for item in root:
         if item.tag == 'node':
             coords = ((float)(item.get('lat')),(float)(item.get('lon')))
+            #print(coords)
             # row is 0 for 43N, 1201 (EPIX) for 42N
             erow = (int)((43 - coords[0]) * EPIX)
             # col is 0 for 18 E, 1201 for 19 E
@@ -358,13 +363,13 @@ def build_graph(elevs):
                         nodes[thisn].ways.append(Edge(ways[wayid],nodes[thisn],nodes[nextn]))
                         thisn = nextn                
                 ways[wayid].nodes = nlist
-    print(len(coastnodes))
+    print("Num nodes: ",len(nodes))
+    print("Num coast nodes: ",len(coastnodes))
     #print(coastnodes[0])
     #print(nodes[coastnodes[0]])
     return nodes, ways, coastnodes
 
 elevs = build_elevs("N43W079.hgt")
-print(elevs)
 nodes, ways, coastnodes = build_graph(elevs)
 
 master = Tk()
