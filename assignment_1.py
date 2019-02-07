@@ -42,17 +42,12 @@ def node_dist(n1, n2):
     # desirable. Since the slope distance between nodes will always be
     # more than the horizontal distance, this should minimize slope
     # distance traversed.
-    print("Node 1: ", n1.id, n1.pos[0], n1.pos[1], n1.elev)
-    print("Node 2: ", n2.id, n2.pos[0], n2.pos[1], n2.elev)
+
     dx = (n2.pos[0]-n1.pos[0])*MPERLON
     dy = (n2.pos[1]-n1.pos[1])*MPERLAT
-    print("dx, dy = ", dx, dy)
     flat_dist = math.sqrt(dx*dx+dy*dy)
-    print(flat_dist)
     height_diff = n2.elev - n1.elev
-    print(height_diff)
-    theta = math.atan(height_diff/flat_dist)
-    return flat_dist + height_diff*math.sin(theta) #return slope instead? in meters
+    return np.sqrt(flat_dist*flat_dist + height_diff*height_diff)
  
 class Node():
     ''' Graph (map) node, not a search node! '''
