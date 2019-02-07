@@ -16,8 +16,8 @@ import numpy as np
 # bounds of the window, in lat/long
 lat = 43.8948
 lon = -78.8612
-LEFTLON = -78
-RIGHTLON = -79
+LEFTLON = -79
+RIGHTLON = -78
 TOPLAT = 44
 BOTLAT = 43
 WIDTH = RIGHTLON-LEFTLON
@@ -121,7 +121,7 @@ class Planner():
         while not q.empty():
             cf, cnode = q.get()
             if cnode == g:
-                print ("Path found, time will be",costs[g]*60/5000) #5 km/hr on flat
+                print("Path found, time will be",costs[g]*60/5000) #5 km/hr on flat
                 return self.make_path(parents,g)
             for edge in cnode.ways:
                 newcost = costs[cnode] + edge.cost
@@ -163,10 +163,11 @@ class PlanWin(Frame):
 
     def lat_lon_to_elev(self,latlon):
         # row is 0 for 43N, 1201 (EPIX) for 42N
-        row = (int)((43 - latlon[0]) * EPIX)
+        print(latlon)
+        row = (int)((latlon[0] - 43) * EPIX)
         # col is 0 for 18 E, 1201 for 19 E
-        col = (int)((latlon[1]-18) * EPIX)
-        
+        col = (int)((-78 - latlon[1]) * EPIX)
+        print(row, col, row*EPIX+col)
         return self.elevs[row*EPIX+col]
 
     def maphover(self,event):
@@ -291,18 +292,12 @@ class PlanWin(Frame):
 
 def build_elevs(efilename):
     ''' read in elevations from a file. '''
-    #efile = open(efilename)
-    #estr = efile.read()
-    #elevs = []
-    #for spot in range(0,len(estr),2):
-    #    elevs.append(struct.unpack('>h',estr[spot:spot+2])[0])
-    with open(efilename, 'rb') as height_data:
-        elevs = np.fromfile(height_data, np.dtype('>i2'), EPIX*EPIX).reshape((EPIX, EPIX))
-
-        lat_row = int(round((lat - int(lat)) * (EPIX - 1), 0))
-        lon_row = int(round((lon - int(lon)) * (EPIX - 1), 0))
-        print(lat_row, lon_row)
-        return elevs[EPIX - 1 - lat_row, lon_row].astype(int)
+    efile = open(efilename, "rb")
+    estr = efile.read()
+    elevs = []
+    for spot in range(0,len(estr),2):
+       elevs.append(struct.unpack('>h',estr[spot:spot+2])[0])
+    return elevs
 
 def build_graph(elevs):
     ''' Build the search graph from the OpenStreetMap XML. '''
@@ -369,7 +364,8 @@ def build_graph(elevs):
     #print(nodes[coastnodes[0]])
     return nodes, ways, coastnodes
 
-elevs = build_elevs("N43W079.hgt")
+elevs = build_elevs("n43_w079_3arc_v1.bil")
+print(len(elevs))
 nodes, ways, coastnodes = build_graph(elevs)
 
 master = Tk()
