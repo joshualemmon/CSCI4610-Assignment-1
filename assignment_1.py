@@ -165,8 +165,8 @@ class PlanWin(Frame):
         # row is 0 for 43N, 1201 (EPIX) for 42N
         print(latlon)
         row = (int)((latlon[0] - 43) * EPIX)
-        # col is 0 for 18 E, 1201 for 19 E
-        col = (int)((-78 - latlon[1]) * EPIX)
+        # col is 0 for 79 W, 1201 for 78 W
+        col = (int)((79 + latlon[1]) * EPIX)
         print(row, col, row*EPIX+col)
         return self.elevs[row*EPIX+col]
 
