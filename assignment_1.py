@@ -20,14 +20,14 @@ LEFTLON = -79
 RIGHTLON = -78
 TOPLAT = 44
 BOTLAT = 43
-WIDTH = RIGHTLON-LEFTLON
-HEIGHT = TOPLAT-BOTLAT
+WIDTH = (RIGHTLON-LEFTLON)/5
+HEIGHT = (TOPLAT-BOTLAT)/5
 # ratio of one degree of longitude to one degree of latitude 
 LONRATIO = math.cos(TOPLAT*np.pi/180)
-WINWID = 800
+WINWID = 400
 WINHGT = (int)((WINWID/LONRATIO)*HEIGHT/WIDTH)
-TOXPIX = WINWID/WIDTH * 4
-TOYPIX = WINHGT/HEIGHT * 4
+TOXPIX = WINWID/WIDTH
+TOYPIX = WINHGT/HEIGHT
 #width,height of elevation array
 EPIX = 1201
 # approximate number of meters per degree of latitude
@@ -42,11 +42,15 @@ def node_dist(n1, n2):
     # desirable. Since the slope distance between nodes will always be
     # more than the horizontal distance, this should minimize slope
     # distance traversed.
-
+    print("Node 1: ", n1.id, n1.pos[0], n1.pos[1], n1.elev)
+    print("Node 2: ", n2.id, n2.pos[0], n2.pos[1], n2.elev)
     dx = (n2.pos[0]-n1.pos[0])*MPERLON
     dy = (n2.pos[1]-n1.pos[1])*MPERLAT
+    print("dx, dy = ", dx, dy)
     flat_dist = math.sqrt(dx*dx+dy*dy)
+    print(flat_dist)
     height_diff = n2.elev - n1.elev
+    print(height_diff)
     theta = math.atan(height_diff/flat_dist)
     return flat_dist + height_diff*math.sin(theta) #return slope instead? in meters
  
