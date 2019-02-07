@@ -23,11 +23,11 @@ BOTLAT = 43
 WIDTH = RIGHTLON-LEFTLON
 HEIGHT = TOPLAT-BOTLAT
 # ratio of one degree of longitude to one degree of latitude 
-LONRATIO = math.cos(TOPLAT*3.1415/180)
+LONRATIO = math.cos(TOPLAT*np.pi/180)
 WINWID = 800
 WINHGT = (int)((WINWID/LONRATIO)*HEIGHT/WIDTH)
-TOXPIX = WINWID/WIDTH
-TOYPIX = WINHGT/HEIGHT
+TOXPIX = WINWID/WIDTH * 4
+TOYPIX = WINHGT/HEIGHT * 4
 #width,height of elevation array
 EPIX = 1201
 # approximate number of meters per degree of latitude
@@ -52,13 +52,14 @@ def node_dist(n1, n2):
  
 class Node():
     ''' Graph (map) node, not a search node! '''
-    __slots__ = ('id', 'pos', 'ways', 'elev', 'waystr')
+    __slots__ = ('id', 'pos', 'ways', 'elev', 'waystr', 'wayset')
     def __init__(self,id,p,e=0):
         self.id = id
         self.pos = p
         self.ways = []
         self.elev = e
         self.waystr = None
+        self.wayset = None
     def __str__(self):
         if self.waystr is None:
             self.waystr = self.get_waystr()
@@ -70,7 +71,7 @@ class Node():
             for w in self.ways:
                 self.wayset.add(w.way.name)
             for w in self.wayset:
-                self.waystr += w.encode("utf-8") + " "
+                self.waystr += w + " "
         return self.waystr
         
 
@@ -365,8 +366,11 @@ def build_graph(elevs):
     return nodes, ways, coastnodes
 
 elevs = build_elevs("n43_w079_3arc_v1.bil")
-print(len(elevs))
 nodes, ways, coastnodes = build_graph(elevs)
+
+print("WIDTH: ", WIDTH, " HEIGHT: ", HEIGHT)
+print("WINWIDTH: ", WINWID, " WINHEIGHT: ", WINHGT)
+print("TOXPIX: ", TOXPIX, "TOYPIX: ", TOYPIX)
 
 master = Tk()
 thewin = PlanWin(master,nodes,ways,coastnodes,elevs)
