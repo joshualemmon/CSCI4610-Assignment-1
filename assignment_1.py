@@ -46,8 +46,8 @@ def node_dist(n1, n2):
     dy = (n2.pos[1]-n1.pos[1])*MPERLAT
     flat_dist = math.sqrt(dx*dx+dy*dy)
     height_diff = n2.elev - n1.elev
-    return np.sqrt(flat_dist*flat_dist + height_diff*height_diff)
- 
+    slope_dist = np.sqrt(flat_dist*flat_dist + height_diff*height_diff)
+    return slope_dist
 class Node():
     ''' Graph (map) node, not a search node! '''
     __slots__ = ('id', 'pos', 'ways', 'elev', 'waystr', 'wayset')
@@ -80,10 +80,6 @@ class Edge():
         self.way = w
         self.dest = d
         self.cost = node_dist(src,d)
-        if d.elev > src.elev:
-            self.cost += (d.elev-src.elev)*2
-            if self.way.type == 'steps':
-                self.cost *= 1.5
 
 class Way():
     ''' A way is an entire street, for drawing, not searching. '''
@@ -120,7 +116,7 @@ class Planner():
         while not q.empty():
             cf, cnode = q.get()
             if cnode == g:
-                print("Path found, time will be",costs[g]*60/5000) #5 km/hr on flat
+                print("Path found, time will be " + format_time(costs[g]*60/5000) + " at 5km/hour.") #5 km/hr on flat
                 return self.make_path(parents,g)
             for edge in cnode.ways:
                 newcost = costs[cnode] + edge.cost
@@ -148,7 +144,6 @@ class PlanWin(Frame):
     All the GUI pieces to draw the streets, allow places to be selected,
     and then draw the resulting path.
     '''
-    
     __slots__ = ('whatis', 'nodes', 'ways', 'elevs', 'nodelab', 'elab', \
                  'planner', 'lastnode', 'startnode', 'goalnode')
     
@@ -286,6 +281,11 @@ class PlanWin(Frame):
         
         thewin.pack()
 
+def format_time(time):
+    time_str = ""
+    mins = int(math.floor(time))
+    secs = int(round((time - mins)*60))
+    return str(mins) + " minutes and " + str(secs) + " seconds"
 
 def build_elevs(efilename):
     ''' read in elevations from a file. '''
@@ -293,8 +293,29 @@ def build_elevs(efilename):
     estr = efile.read()
     elevs = []
     for spot in range(0,len(estr),2):
-       elevs.append(struct.unpack('>h',estr[spot:spot+2])[0])
+        elevs.append(struct.unpack('>H',estr[spot:spot+2])[0])
     return elevs
+
+#build_elevs func included in starter code was reading in wrong values
+#
+def parse_bil(path):
+    fi = open(path, "rb")
+    contents = fi.read()
+    fi.close()
+
+    n = int(EPIX*EPIX)
+    s = "<%dH" % (n,)
+    z = struct.unpack(s, contents)
+
+    values = np.zeros((EPIX*EPIX))
+    
+    for r in range(EPIX):
+        for c in range(EPIX):
+            val = z[(EPIX*r)+c]
+            if (val==65535 or val<0 or val>20000):
+                val=0.0
+            values[(EPIX*r + c)]=float(val)
+    return values
 
 def build_graph(elevs):
     ''' Build the search graph from the OpenStreetMap XML. '''
@@ -357,16 +378,11 @@ def build_graph(elevs):
                 ways[wayid].nodes = nlist
     print("Num nodes: ",len(nodes))
     print("Num coast nodes: ",len(coastnodes))
-    #print(coastnodes[0])
-    #print(nodes[coastnodes[0]])
     return nodes, ways, coastnodes
 
-elevs = build_elevs("n43_w079_3arc_v1.bil")
+#elevs = build_elevs("n43_w079_3arc_v1.bil")
+elevs = parse_bil("n43_w079_3arc_v1.bil")
 nodes, ways, coastnodes = build_graph(elevs)
-
-print("WIDTH: ", WIDTH, " HEIGHT: ", HEIGHT)
-print("WINWIDTH: ", WINWID, " WINHEIGHT: ", WINHGT)
-print("TOXPIX: ", TOXPIX, "TOYPIX: ", TOYPIX)
 
 master = Tk()
 thewin = PlanWin(master,nodes,ways,coastnodes,elevs)
