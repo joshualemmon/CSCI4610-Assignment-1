@@ -16,18 +16,18 @@ import numpy as np
 # bounds of the window, in lat/long
 lat = 43.8948
 lon = -78.8612
-LEFTLON = -79
-RIGHTLON = -78
-TOPLAT = 44
-BOTLAT = 43
-WIDTH = (RIGHTLON-LEFTLON)/5
-HEIGHT = (TOPLAT-BOTLAT)/5
+LEFTLON = -78.8612000
+RIGHTLON = -78.8394000
+TOPLAT = 43.9038000
+BOTLAT = 43.8948000
+WIDTH = (RIGHTLON-LEFTLON)
+HEIGHT = (TOPLAT-BOTLAT)
 # ratio of one degree of longitude to one degree of latitude 
 LONRATIO = math.cos(TOPLAT*np.pi/180)
-WINWID = 400
+WINWID = 800
 WINHGT = (int)((WINWID/LONRATIO)*HEIGHT/WIDTH)
-TOXPIX = WINWID/WIDTH
-TOYPIX = WINHGT/HEIGHT
+TOXPIX = (WINWID/WIDTH)
+TOYPIX = (WINHGT/HEIGHT)
 #width,height of elevation array
 EPIX = 1201
 # approximate number of meters per degree of latitude
@@ -37,11 +37,10 @@ MPERLON = MPERLAT*LONRATIO
 def node_dist(n1, n2):
     ''' Distance between nodes n1 and n2, in meters. '''
     # Added height difference between nodes to the heuristic scaled by
-    # sin(theta) where theta is the angle of incline.
-    # This way nodes that are relative even height wise will be more 
-    # desirable. Since the slope distance between nodes will always be
-    # more than the horizontal distance, this should minimize slope
-    # distance traversed.
+    # calculating the slope length of the path between node 1 and node 2.
+    # Now paths that have the same horizontal distance but different
+    # height differences will be valued differently. The algorithm
+    # will favour paths with smaller slope distances.
 
     dx = (n2.pos[0]-n1.pos[0])*MPERLON
     dy = (n2.pos[1]-n1.pos[1])*MPERLAT
@@ -163,12 +162,10 @@ class PlanWin(Frame):
 
     def lat_lon_to_elev(self,latlon):
         # row is 0 for 43N, 1201 (EPIX) for 42N
-        print(latlon)
         row = (int)((latlon[0] - 43) * EPIX)
         # col is 0 for 79 W, 1201 for 78 W
         col = (int)((79 + latlon[1]) * EPIX)
-        print(row, col, row*EPIX+col)
-        return self.elevs[row*EPIX+col]
+        return self.elevs[row*EPIX+col -1]
 
     def maphover(self,event):
         self.elab.configure(text = str(self.pix_to_elev(event.x,event.y)))
@@ -239,7 +236,7 @@ class PlanWin(Frame):
         self.goalnode = None
         self.planner = Planner(nodes,ways)
         thewin = Frame(master)
-        w = Canvas(thewin, width=WINWID, height=WINHGT)#, cursor="crosshair")
+        w = Canvas(thewin, width=WINWID, height=WINHGT, cursor="crosshair")
         w.bind("<Button-1>", self.mapclick)
         w.bind("<Motion>", self.maphover)
         for waynum in self.ways:
