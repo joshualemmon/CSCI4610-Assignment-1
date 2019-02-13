@@ -47,7 +47,9 @@ def node_dist(n1, n2):
     flat_dist = math.sqrt(dx*dx+dy*dy)
     height_diff = n2.elev - n1.elev
     slope_dist = np.sqrt(flat_dist*flat_dist + height_diff*height_diff)
+    #print(flat_dist, slope_dist)
     return slope_dist
+
 class Node():
     ''' Graph (map) node, not a search node! '''
     __slots__ = ('id', 'pos', 'ways', 'elev', 'waystr', 'wayset')
@@ -287,34 +289,34 @@ def format_time(time):
     secs = int(round((time - mins)*60))
     return str(mins) + " minutes and " + str(secs) + " seconds"
 
-def build_elevs(efilename):
-    ''' read in elevations from a file. '''
-    efile = open(efilename, "rb")
-    estr = efile.read()
-    elevs = []
-    for spot in range(0,len(estr),2):
-        elevs.append(struct.unpack('>H',estr[spot:spot+2])[0])
-    return elevs
 
-#build_elevs func included in starter code was reading in wrong values
-#
+
+#The parse_bil function is capable of reading in the .bil file
+#that contains the height values in little endian format.
 def parse_bil(path):
-    fi = open(path, "rb")
-    contents = fi.read()
-    fi.close()
+    #opens file in binary read mode
+    f = open(path, "rb")
+    contents = f.read()
+    f.close()
 
+    #n corresponds to number of entries in the elevs list
     n = int(EPIX*EPIX)
+    #s is the struct format that the bil will get unpacked into. 
+    #The "<%dH" signifies that the data is in little endian format
+    #with n values, and will be read in as unsigned short values.
     s = "<%dH" % (n,)
     z = struct.unpack(s, contents)
 
     values = np.zeros((EPIX*EPIX))
     
+    #transferring unpacked vaues into list format, setting void 
+    #data to 0
     for r in range(EPIX):
         for c in range(EPIX):
             val = z[(EPIX*r)+c]
-            if (val==65535 or val<0 or val>20000):
+            if (val==-32767):
                 val=0.0
-            values[(EPIX*r + c)]=float(val)
+            values[(EPIX*r) + c]=float(val)
     return values
 
 def build_graph(elevs):
@@ -332,8 +334,8 @@ def build_graph(elevs):
             #print(coords)
             # row is 0 for 43N, 1201 (EPIX) for 42N
             erow = (int)((43 - coords[0]) * EPIX)
-            # col is 0 for 18 E, 1201 for 19 E
-            ecol = (int)((coords[1]-18) * EPIX)
+            # col is 0 for 79 W, 1201 for 78 W
+            ecol = (int)((-79 -coords[1]) * EPIX)
             try:
                 el = elevs[erow*EPIX+ecol]
             except IndexError:
