@@ -47,7 +47,6 @@ def node_dist(n1, n2):
     flat_dist = math.sqrt(dx*dx+dy*dy)
     height_diff = n2.elev - n1.elev
     slope_dist = math.sqrt(flat_dist*flat_dist + height_diff*height_diff)
-    print(slope_dist, flat_dist, height_diff)
     return slope_dist
     #return flat_dist
 class Node():
