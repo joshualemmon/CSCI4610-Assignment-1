@@ -46,10 +46,10 @@ def node_dist(n1, n2):
     dy = (n2.pos[1]-n1.pos[1])*MPERLAT
     flat_dist = math.sqrt(dx*dx+dy*dy)
     height_diff = n2.elev - n1.elev
-    slope_dist = np.sqrt(flat_dist*flat_dist + height_diff*height_diff)
-    #print(flat_dist, slope_dist)
+    slope_dist = math.sqrt(flat_dist*flat_dist + height_diff*height_diff)
+    print(slope_dist, flat_dist, height_diff)
     return slope_dist
-
+    #return flat_dist
 class Node():
     ''' Graph (map) node, not a search node! '''
     __slots__ = ('id', 'pos', 'ways', 'elev', 'waystr', 'wayset')
@@ -161,7 +161,7 @@ class PlanWin(Frame):
         # row is 0 for 43N, 1201 (EPIX) for 42N
         row = (int)((latlon[0] - 43) * EPIX)
         # col is 0 for 79 W, 1201 for 78 W
-        col = (int)((79 + latlon[1]) * EPIX)
+        col = (int)((79 - np.abs(latlon[1])) * EPIX)
         return self.elevs[row*EPIX+col -1]
 
     def maphover(self,event):
@@ -286,7 +286,7 @@ class PlanWin(Frame):
 def format_time(time):
     time_str = ""
     mins = int(math.floor(time))
-    secs = int(round((time - mins)*60))
+    secs = round((time - mins)*60, 5)
     return str(mins) + " minutes and " + str(secs) + " seconds"
 
 
@@ -335,7 +335,7 @@ def build_graph(elevs):
             # row is 0 for 43N, 1201 (EPIX) for 42N
             erow = (int)((43 - coords[0]) * EPIX)
             # col is 0 for 79 W, 1201 for 78 W
-            ecol = (int)((-79 -coords[1]) * EPIX)
+            ecol = (int)((79 - np.abs(coords[1])) * EPIX)
             try:
                 el = elevs[erow*EPIX+ecol]
             except IndexError:
